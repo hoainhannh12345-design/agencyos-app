@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgencyOS - Premium AI Lead Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: '#a3e635', darkBg: '#090d16', cardBg: '#111827' } } }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen p-4 md:p-8 antialiased">
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        <header class="flex justify-between items-center border-b border-slate-800 pb-6">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Agency<span class="text-brand">OS</span></h1>
+                <p class="text-slate-400 text-sm mt-1">Hệ thống SaaS săn khách và bắt lỗi tự động thu phí tháng.</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
+                <i data-lucide="coins" class="text-brand w-5 h-5"></i>
+                <div>
+                    <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Số dư tài khoản</div>
+                    <div id="credit-count" class="text-sm font-bold text-slate-200">50 Lượt Quét</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="bg-cardBg border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase">Mã kích hoạt bản quyền</label>
+                    <input type="text" id="licenseKey" placeholder="Nhập License Key" class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-brand transition-all">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase">Dịch vụ bạn cung cấp</label>
+                    <select id="service" class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-brand transition-all">
+                        <option value="Short-form Video Editing">Dựng Video Ngắn (TikTok/Reels)</option>
+                        <option value="Premium Web Design">Thiết kế Website cao cấp</option>
+                        <option value="Facebook & Google Ads">Chạy Ads & Tối ưu phễu</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase">Ngành ngách mục tiêu</label>
+                    <input type="text" id="niche" value="Gyms" class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-brand transition-all">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase">Khu vực / Thành phố</label>
+                    <input type="text" id="location" value="Texas, US" class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-brand transition-all">
+                </div>
+            </div>
+
+            <button onclick="triggerAudit()" id="btn-submit" class="w-full bg-brand hover:bg-lime-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5">
+                <i data-lucide="zap" class="w-5 h-5"></i> BẤM KÍCH HOẠT QUÉT ĐỐI THỦ (TRỪ 1 CREDIT)
+            </button>
+        </div>
+
+        <div id="loading" class="hidden bg-slate-900/50 border border-slate-800 p-12 rounded-2xl flex flex-col items-center gap-4 text-center">
+            <div class="w-12 h-12 border-4 border-slate-800 border-t-brand rounded-full animate-spin"></div>
+            <p class="text-brand text-sm font-semibold animate-pulse">Cỗ máy đang rà soát dữ liệu mạng xã hội và bắt lỗi doanh nghiệp...</p>
+        </div>
+
+        <div id="result-box" class="hidden space-y-4">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4 text-brand"></i> Danh sách mục tiêu vừa được bóc tách
+            </h3>
+            <div class="bg-cardBg border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr class="bg-slate-900/80 border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
+                                <th class="p-4 w-[20%]">Doanh Nghiệp</th>
+                                <th class="p-4 w-[30%]">Vết Rách Vận Hành (The Hurt)</th>
+                                <th class="p-4 w-[25%]">Kịch Bản Loom 60s (Pitch)</th>
+                                <th class="p-4 w-[25%]">Email 3 Dòng Chốt Hẹn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-slate-800 text-sm text-slate-300">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        if(!localStorage.getItem('user_credits')) {
+            localStorage.setItem('user_credits', '50');
+        }
+        document.getElementById('credit-count').innerText = localStorage.getItem('user_credits') + " Lượt Quét";
+
+        async function triggerAudit() {
+            const credits = parseInt(localStorage.getItem('user_credits'));
+            if(credits <= 0) {
+                alert("Tài khoản của bạn đã hết credit lượt dùng!");
+                return;
+            }
+
+            const payload = {
+                licenseKey: document.getElementById('licenseKey').value,
+                service: document.getElementById('service').value,
+                niche: document.getElementById('niche').value,
+                location: document.getElementById('location').value
+            };
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result-box').classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/audit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if(!response.ok) throw new Error(data.error);
+
+                localStorage.setItem('user_credits', (credits - 1).toString());
+                document.getElementById('credit-count').innerText = (credits - 1) + " Lượt Quét";
+
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+                
+                data.forEach(lead => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-900/20">
+                            <td class="p-4">
+                                <div class="font-bold text-slate-100 text-base">${lead.name}</div>
+                                <div class="text-xs text-slate-500 mt-1">Web: ${lead.website}</div>
+                                <div class="text-xs text-slate-500">Mail: ${lead.email}</div>
+                            </td>
+                            <td class="p-4 text-xs leading-relaxed text-slate-300">
+                                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide block w-max mb-1">Lỗ Hổng</span>
+                                ${lead.gap}
+                            </td>
+                            <td class="p-4"><textarea class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-[11px] font-mono text-slate-400 h-24" readonly>${lead.loom}</textarea></td>
+                            <td class="p-4"><textarea class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-[11px] font-mono text-slate-400 h-24" readonly>${lead.email_script}</textarea></td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('result-box').classList.remove('hidden');
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
