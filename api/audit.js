@@ -10,10 +10,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 1. Gọi Serper API để quét dữ liệu Google
     const serperResponse = await fetch('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
-        'X-API-KEY': process.env.SERPER_API_KEY,
+        'X-API-KEY': process.env.SERPER_API_KEY || '',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -23,7 +24,16 @@ export default async function handler(req, res) {
     });
     
     const serperData = await serperResponse.json();
+    
+    // Bắt lỗi nếu Serper API sai chìa khóa
+    if (serperData.error) {
+      return res.status(500).json({ error: `Lỗi từ Serper API (Check lại key Serper): ${serperData.error}` });
+    }
+
     const organicResults = serperData.organic || [];
+    if (organicResults.length === 0) {
+      return res.status(404).json({ error: 'Không cào được doanh nghiệp nào. Hãy thử nhập chữ tiếng Anh ở ô Ngách (ví dụ: Gyms, Spa) và Khu vực (Texas, New York) nhé!' });
+    }
     
     const leadsSummary = organicResults.map(item => ({
       title: item.title,
@@ -31,6 +41,7 @@ export default async function handler(req, res) {
       snippet: item.snippet
     }));
 
+    // 2. Gọi Gemini API để phân tích
     const systemPrompt = `You are a B2B Growth Hacker. Analyze these business leads for an agency offering "${service}".
     Leads data: ${JSON.stringify(leadsSummary)}.
     
@@ -54,8 +65,17 @@ export default async function handler(req, res) {
     });
 
     const geminiData = await geminiResponse.json();
-    const cleanJsonText = geminiData.candidates[0].content.parts[0].text;
     
+    // Bắt lỗi nếu Gemini API sai chìa khóa hoặc hết hạn
+    if (geminiData.error) {
+      return res.status(500).json({ error: `Lỗi từ Gemini API (Check lại key Gemini): ${geminiData.error.message}` });
+    }
+
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      return res.status(500).json({ error: 'Gemini không trả về kết quả cấu trúc. Hãy thử bấm lại lần nữa.' });
+    }
+
+    const cleanJsonText = geminiData.candidates[0].content.parts[0].text;
     return res.status(200).json(JSON.parse(cleanJsonText));
 
   } catch (error) {
